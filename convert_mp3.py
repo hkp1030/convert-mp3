@@ -9,6 +9,39 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
+def validate_media_file(filepath: str) -> str | None:
+    """파일이 오디오 스트림을 포함한 유효한 미디어 파일인지 검증한다.
+
+    Returns:
+        None이면 유효, 문자열이면 에러 메시지.
+    """
+    # fmt: off
+    result = subprocess.run(
+        [
+            'ffprobe',
+            '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_streams',
+            '-select_streams', 'a',
+            filepath,
+        ],
+        capture_output=True, text=True,
+    )
+    # fmt: on
+    if result.returncode != 0:
+        return 'not a valid media file'
+
+    try:
+        streams = json.loads(result.stdout).get('streams', [])
+    except (json.JSONDecodeError, KeyError):
+        return 'unable to read media info'
+
+    if not streams:
+        return 'no audio stream found'
+
+    return None
+
+
 def get_duration(filepath: str) -> float:
     # fmt: off
     result = subprocess.run(
@@ -130,16 +163,20 @@ def main() -> None:
     args = parser.parse_args()
 
     num_cpus = args.jobs
-    files = [f for f in args.files if Path(f).is_file()]
+    files = []
+    for f in args.files:
+        if not Path(f).is_file():
+            print(f"Warning: skipping '{f}' (not found)", file=sys.stderr)
+            continue
+        error = validate_media_file(f)
+        if error:
+            print(f"Warning: skipping '{f}' ({error})", file=sys.stderr)
+            continue
+        files.append(f)
 
     if not files:
         print('Error: no valid files provided', file=sys.stderr)
         sys.exit(1)
-
-    missing = set(args.files) - set(files)
-    if missing:
-        for m in missing:
-            print(f"Warning: skipping '{m}' (not found)", file=sys.stderr)
 
     workers_per_file = max(1, num_cpus // len(files))
     print(f'CPUs: {num_cpus}, files: {len(files)}, workers/file: {workers_per_file}')
