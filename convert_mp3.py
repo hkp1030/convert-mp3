@@ -25,7 +25,10 @@ def validate_media_file(filepath: str) -> str | None:
             '-select_streams', 'a',
             filepath,
         ],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
     )
     # fmt: on
     if result.returncode != 0:
@@ -51,7 +54,11 @@ def get_duration(filepath: str) -> float:
             '-print_format', 'json',
             '-show_format', filepath,
         ],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
+        check=True,
     )
     # fmt: on
     return float(json.loads(result.stdout)['format']['duration'])
@@ -144,6 +151,10 @@ def convert_file(
 
 
 def main() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='backslashreplace')
+
     parser = argparse.ArgumentParser(description='Fast video to MP3 converter')
     parser.add_argument('files', nargs='+', help='Video files to convert')
     parser.add_argument(
