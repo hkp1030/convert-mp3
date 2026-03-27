@@ -1,0 +1,26 @@
+[project]
+name = "convert-mp3"
+version = "0.1.0"
+description = "Fast video to MP3 converter using all CPU cores"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["ruff"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["convert_mp3"]
+
+[project.scripts]
+tomp3 = "convert_mp3:main"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
