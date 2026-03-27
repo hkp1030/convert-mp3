@@ -22,6 +22,7 @@ def validate_media_file(filepath: str) -> str | None:
             '-v', 'quiet',
             '-print_format', 'json',
             '-show_streams',
+            '-show_format',
             '-select_streams', 'a',
             filepath,
         ],
@@ -35,12 +36,48 @@ def validate_media_file(filepath: str) -> str | None:
         return 'not a valid media file'
 
     try:
-        streams = json.loads(result.stdout).get('streams', [])
+        probe = json.loads(result.stdout)
     except (json.JSONDecodeError, KeyError):
         return 'unable to read media info'
 
+    streams = probe.get('streams', [])
     if not streams:
         return 'no audio stream found'
+
+    duration = float(probe.get('format', {}).get('duration') or 0.0)
+    sample_seconds = 1.0
+    max_start = max(0.0, duration - sample_seconds)
+    offsets = []
+
+    for fraction in (0.0, 0.5, 0.95):
+        offset = 0.0 if fraction == 0 else min(max_start, duration * fraction)
+        offset = round(offset, 3)
+        if offset not in offsets:
+            offsets.append(offset)
+
+    for offset in offsets:
+        result = subprocess.run(
+            [
+                'ffmpeg',
+                '-v', 'error',
+                '-xerror',
+                '-ss', f'{offset:.3f}',
+                '-t', f'{sample_seconds:.3f}',
+                '-i', filepath,
+                '-map', '0:a:0',
+                '-vn',
+                '-sn',
+                '-dn',
+                '-f', 'null',
+                '-',
+            ],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+        )
+        if result.returncode != 0:
+            return f'audio stream is not decodable (failed near {offset:.1f}s)'
 
     return None
 
