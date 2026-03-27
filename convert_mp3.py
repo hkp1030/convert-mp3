@@ -191,3 +191,7 @@ def main() -> None:
                     fut.result()
 
     print('Done.')
+
+
+if __name__ == '__main__':
+    main()
