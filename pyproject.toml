@@ -3,7 +3,7 @@ name = "convert-mp3"
 version = "0.1.0"
 description = "Fast video to MP3 converter using all CPU cores"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = []
 
 [dependency-groups]

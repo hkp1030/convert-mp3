@@ -13,7 +13,7 @@
 
 ## 요구 사항
 
-- Python 3.11+
+- Python 3.14+
 - [FFmpeg](https://ffmpeg.org/) (`ffmpeg`, `ffprobe`가 PATH에 있어야 함)
 
 ## 설치
